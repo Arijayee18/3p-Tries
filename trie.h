@@ -8,95 +8,78 @@ class trie {
 private:
     class Node {
     public:
-        bool is_terminal;
-        Node* children[26];
-
-        Node() : is_terminal(false) {
-            for (int i = 0; i < 26; ++i)
-                children[i] = nullptr;
-        }
+        bool is_terminal = false;
+        Node* children[26] = {nullptr};
 
         ~Node() {
-            for (int i = 0; i < 26; ++i)
-                delete children[i];
+            for (Node* child : children) {
+                delete child;  // This safely deletes entire subtree
+            }
         }
     };
 
     Node* root;
 
-    // Helper to recursively delete nodes
-    void clear(Node* node) {
-        if (node) {
-            for (int i = 0; i < 26; ++i)
-                clear(node->children[i]);
-            delete node;
-        }
-    }
-
-    // Helper for extend()
-    void extend_helper(Node* node, std::string current, std::vector<std::string>& result) {
-        if (!node) return;
+    void extend_helper(Node* node, std::string& current, std::vector<std::string>& result) const {
         if (node->is_terminal)
             result.push_back(current);
+
         for (int i = 0; i < 26; ++i) {
             if (node->children[i]) {
-                extend_helper(node->children[i], current + static_cast<char>('a' + i), result);
+                current.push_back('a' + i);
+                extend_helper(node->children[i], current, result);
+                current.pop_back();
             }
         }
     }
 
 public:
-    trie() {
-        root = new Node();
-    }
+    trie() : root(new Node()) {}
 
     ~trie() {
-        clear(root);
+        delete root;  // Let Node's destructor recursively clean up
     }
 
     void insert(const std::string& s) {
         Node* curr = root;
         for (char c : s) {
-            if (c < 'a' || c > 'z') continue;
-            int idx = c - 'a';
-            if (!curr->children[idx])
-                curr->children[idx] = new Node();
-            curr = curr->children[idx];
+            int i = c - 'a';
+            if (!curr->children[i])
+                curr->children[i] = new Node();
+            curr = curr->children[i];
         }
         curr->is_terminal = true;
     }
 
-    bool contains(const std::string& s) {
+    bool contains(const std::string& s) const {
         Node* curr = root;
         for (char c : s) {
-            if (c < 'a' || c > 'z') return false;
-            int idx = c - 'a';
-            if (!curr->children[idx]) return false;
-            curr = curr->children[idx];
+            int i = c - 'a';
+            if (!curr->children[i]) return false;
+            curr = curr->children[i];
         }
         return curr->is_terminal;
     }
 
-    bool is_prefix(const std::string& s) {
+    bool is_prefix(const std::string& s) const {
         Node* curr = root;
         for (char c : s) {
-            if (c < 'a' || c > 'z') return false;
-            int idx = c - 'a';
-            if (!curr->children[idx]) return false;
-            curr = curr->children[idx];
+            int i = c - 'a';
+            if (!curr->children[i]) return false;
+            curr = curr->children[i];
         }
         return true;
     }
 
-    void extend(const std::string& prefix, std::vector<std::string>& result) {
+    void extend(const std::string& prefix, std::vector<std::string>& result) const {
         Node* curr = root;
         for (char c : prefix) {
-            if (c < 'a' || c > 'z') return;
-            int idx = c - 'a';
-            if (!curr->children[idx]) return;
-            curr = curr->children[idx];
+            int i = c - 'a';
+            if (!curr->children[i]) return;
+            curr = curr->children[i];
         }
-        extend_helper(curr, prefix, result);
+        std::string current = prefix;
+        extend_helper(curr, current, result);
     }
 };
 
